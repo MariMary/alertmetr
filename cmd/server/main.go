@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -51,6 +52,7 @@ func main() {
 		flag.Var(&addr, "a", "Net address host:port")
 		flag.Parse()
 	}
+	log.Println(addr.String())
 	r := chi.NewMux()
 	r.Handle("/update/*", http.HandlerFunc(srvHandler.UpdateHandler))
 	r.Handle("/value/*", http.HandlerFunc(srvHandler.GetSingleValueHandler))
