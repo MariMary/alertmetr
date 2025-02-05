@@ -64,7 +64,7 @@ func SendMetric(metricType string, metricName string, metricValue string) error 
 	var body []byte
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	request.Header.Set("Content-Type", "text/plain")
 	response, err := client.Do(request)
