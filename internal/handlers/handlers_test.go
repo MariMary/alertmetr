@@ -45,7 +45,7 @@ func TestHandlers_UpdateHandler(t *testing.T) {
 		{
 			name: "negative test #2",
 			want: want{
-				path: "/update/counter/anothermetric/4ppp27",
+				path: "/update/counter/mnn/1rrr00",
 				code: 400,
 			},
 		},

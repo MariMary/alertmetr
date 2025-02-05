@@ -16,7 +16,7 @@ type MetricHandlers struct {
 
 func (ms *MetricHandlers) GetSingleValueHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		http.Error(w, "Invalid method", http.StatusInternalServerError)
 	}
 	pth := r.URL.Path
 	params := strings.Split(pth, "/")
