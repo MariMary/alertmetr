@@ -60,26 +60,27 @@ func NewMetricCollector() *MetricCollector {
 	addrEnv := os.Getenv("ADDRESS")
 	if addr.Set(addrEnv) != nil {
 		flag.Var(&addr, "a", "Net address host:port")
+		flag.Parse()
 	}
 	pollEnv := os.Getenv("POLL_INTERVAL")
-	var poll *int
-	var err error
-	*poll, err = strconv.Atoi(pollEnv)
+	poll, err := strconv.Atoi(pollEnv)
 	if nil != err {
-		poll = flag.Int("p", 2, "pol interval")
+		pollFlag := flag.Int("p", 2, "pol interval")
+		flag.Parse()
+		poll = *pollFlag
 	}
 	reportEnv := os.Getenv("REPORT_INTERVAL")
-	var report *int
-	*report, err = strconv.Atoi(reportEnv)
+	report, err := strconv.Atoi(reportEnv)
 	if nil != err {
-		report = flag.Int("r", 10, "report interval")
+		reportFlag := flag.Int("r", 10, "report interval")
+		flag.Parse()
+		report = *reportFlag
 	}
-	flag.Parse()
 
 	return &MetricCollector{
 		Addr:           addr,
-		pollInterval:   time.Duration(*poll),
-		reportInterval: time.Duration(*report),
+		pollInterval:   time.Duration(poll),
+		reportInterval: time.Duration(report),
 		Metric:         Metrics{},
 	}
 }
