@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/go-chi/chi/v5 v5.2.1
+	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
 	github.com/zeebo/assert v1.3.1
 )

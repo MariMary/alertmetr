@@ -66,3 +66,38 @@ func TestHandlers_UpdateHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestHandlers_GetSingleValueHandler(t *testing.T) {
+	type want struct {
+		method string
+		code   int
+		path   string
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "positive test #1",
+			want: want{
+				path: "/value/counter/val208",
+				code: 404,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srvHandler := MetricHandlers{
+				Storage: storage.NewMemStorage(),
+			}
+			r := httptest.NewRequest(http.MethodGet, test.want.path, nil)
+			w := httptest.NewRecorder()
+			srvHandler.GetSingleValueHandler(w, r)
+			result := w.Result()
+			assert.Equal(t, result.StatusCode, test.want.code)
+			_, err := io.ReadAll(result.Body)
+			require.NoError(t, err)
+			result.Body.Close()
+		})
+	}
+}

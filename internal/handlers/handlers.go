@@ -16,7 +16,7 @@ type MetricHandlers struct {
 
 func (ms *MetricHandlers) GetSingleValueHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Invalid method", http.StatusInternalServerError)
+		http.Error(w, "Invalid method", http.StatusBadRequest)
 	}
 	pth := r.URL.Path
 	params := strings.Split(pth, "/")
@@ -36,7 +36,7 @@ func (ms *MetricHandlers) GetSingleValueHandler(w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write([]byte(metric))
 		if nil != err {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
