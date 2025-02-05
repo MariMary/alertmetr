@@ -2,14 +2,41 @@ package metric
 
 import (
 	"bytes"
+	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"reflect"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 )
+
+type NetAddress struct {
+	Host string
+	Port int
+}
+
+func (a NetAddress) String() string {
+	return a.Host + ":" + strconv.Itoa(a.Port)
+}
+
+func (a *NetAddress) Set(s string) error {
+	hp := strings.Split(s, ":")
+	if len(hp) != 2 {
+		return errors.New("Need address in a form host:port")
+	}
+	port, err := strconv.Atoi(hp[1])
+	if err != nil {
+		return err
+	}
+	a.Host = hp[0]
+	a.Port = port
+	return nil
+}
 
 type Metrics struct {
 	MemStats    runtime.MemStats
@@ -18,12 +45,27 @@ type Metrics struct {
 }
 
 type MetricCollector struct {
-	Metric Metrics
+	Metric         Metrics
+	Addr           NetAddress
+	reportInterval time.Duration
+	pollInterval   time.Duration
 }
 
 func NewMetricCollector() *MetricCollector {
+	addr := NetAddress{
+		Host: "localhost",
+		Port: 8080,
+	}
+	flag.Var(&addr, "a", "Net address host:port")
+	poll := flag.Int("p", 2, "pol interval")
+	report := flag.Int("r", 10, "report interval")
+	flag.Parse()
+
 	return &MetricCollector{
-		Metric: Metrics{},
+		Addr:           addr,
+		pollInterval:   time.Duration(*poll),
+		reportInterval: time.Duration(*report),
+		Metric:         Metrics{},
 	}
 }
 
@@ -54,13 +96,13 @@ func (mc *MetricCollector) SendMetrics() {
 			MetricValue = fmt.Sprintf("%v", value)
 			MetricType = "counter"
 		}
-		SendMetric(MetricType, MetricName, MetricValue)
+		SendMetric(mc.Addr.String(), MetricType, MetricName, MetricValue)
 	}
 }
 
-func SendMetric(metricType string, metricName string, metricValue string) error {
+func SendMetric(Addr string, metricType string, metricName string, metricValue string) error {
 	client := &http.Client{}
-	url := "http://localhost:8080/update/" + metricType + "/" + metricName + "/" + metricValue
+	url := Addr + "/update/" + metricType + "/" + metricName + "/" + metricValue
 	var body []byte
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
@@ -80,13 +122,15 @@ func SendMetric(metricType string, metricName string, metricValue string) error 
 }
 
 func (mc *MetricCollector) Run() {
-	counter := 0
+	pollTick := time.NewTicker(mc.pollInterval)
+	reportTick := time.NewTicker(mc.reportInterval)
 	for {
-		if counter%5 == 0 {
+		select {
+		case <-pollTick.C:
+			mc.ReadMetrics()
+		case <-reportTick.C:
 			mc.SendMetrics()
 		}
-		counter++
-		mc.ReadMetrics()
-		time.Sleep(2 * time.Second)
+
 	}
 }
