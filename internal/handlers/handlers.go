@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"html/template"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -11,6 +12,63 @@ import (
 
 type MetricHandlers struct {
 	Storage storage.Storage
+}
+
+func (ms *MetricHandlers) GetSingleValueHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+	}
+	pth := r.URL.Path
+	params := strings.Split(pth, "/")
+	if len(params) < 3 {
+		http.Error(w, "No such metric", http.StatusNotFound)
+		return
+	}
+
+	mType := params[2]
+	mName := params[3]
+	metric, err := ms.Storage.GetMetric(mType, mName)
+	if nil != err {
+		http.Error(w, "No such metric", http.StatusNotFound)
+		return
+	} else {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write([]byte(metric))
+		if nil != err {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func (ms *MetricHandlers) GetAllValuesHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+	}
+	metrics := ms.Storage.GetAllMetrics()
+	tmpl := template.Must(template.New("data").Parse(`<!doctype html>
+	<html>
+	<head>
+		<title> List of metrics </title>
+	</head>
+	<body>
+		<table>
+			<thead>
+				<tr>
+					<th>Name</th><th>Value</th>
+				</tr>
+			</thead>
+			<tbody>
+			{{- range $key, $value := . -}}
+				<tr><td>{{- $key -}}</td><td>{{- $value -}}</td></tr>
+			{{end}}
+			</tbody>
+		</table>
+	</body>
+	</html>`))
+	tmpl.Execute(w, metrics)
+
 }
 
 func (ms *MetricHandlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {

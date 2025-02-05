@@ -12,10 +12,12 @@ var srvHandler = handlers.MetricHandlers{
 }
 
 func main() {
-	mux := http.NewServeMux()
-	mux.Handle("/", http.HandlerFunc(srvHandler.UpdateHandler))
+	r := http.NewServeMux()
+	r.Handle("/update/", http.HandlerFunc(srvHandler.UpdateHandler))
+	r.Handle("/value/", http.HandlerFunc(srvHandler.GetSingleValueHandler))
+	r.Handle("/", http.HandlerFunc(srvHandler.GetAllValuesHandler))
 
-	err := http.ListenAndServe(`:8080`, mux)
+	err := http.ListenAndServe(`:8080`, r)
 	if err != nil {
 		panic(err)
 	}
