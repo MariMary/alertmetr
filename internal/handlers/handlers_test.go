@@ -62,7 +62,7 @@ func TestHandlers_UpdateHandler(t *testing.T) {
 			assert.Equal(t, result.StatusCode, test.want.code)
 			_, err := io.ReadAll(result.Body)
 			require.NoError(t, err)
-
+			result.Body.Close()
 		})
 	}
 }
