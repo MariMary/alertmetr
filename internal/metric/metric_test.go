@@ -28,7 +28,7 @@ func TestMetric_SendMetric(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 
-			err := SendMetric(test.want.metricType, test.want.metricName, test.want.metricValue)
+			err := SendMetric("localhost:8080", test.want.metricType, test.want.metricName, test.want.metricValue)
 			require.Error(t, err)
 
 		})
