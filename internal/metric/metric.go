@@ -69,12 +69,12 @@ func SendMetric(metricType string, metricName string, metricValue string) error 
 	request.Header.Set("Content-Type", "text/plain")
 	response, err := client.Do(request)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	_, err = io.Copy(io.Discard, response.Body)
 	response.Body.Close()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return nil
 }
