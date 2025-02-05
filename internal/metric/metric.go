@@ -102,7 +102,7 @@ func (mc *MetricCollector) SendMetrics() {
 
 func SendMetric(Addr string, metricType string, metricName string, metricValue string) error {
 	client := &http.Client{}
-	url := Addr + "/update/" + metricType + "/" + metricName + "/" + metricValue
+	url := "http://" + Addr + "/update/" + metricType + "/" + metricName + "/" + metricValue
 	var body []byte
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
