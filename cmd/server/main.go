@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -45,8 +46,11 @@ func main() {
 		Host: "localhost",
 		Port: 8080,
 	}
-	flag.Var(&addr, "a", "Net address host:port")
-	flag.Parse()
+	addrEnv := os.Getenv("ADDRESS")
+	if addr.Set(addrEnv) != nil {
+		flag.Var(&addr, "a", "Net address host:port")
+		flag.Parse()
+	}
 	r := chi.NewMux()
 	r.Handle("/update/*", http.HandlerFunc(srvHandler.UpdateHandler))
 	r.Handle("/value/*", http.HandlerFunc(srvHandler.GetSingleValueHandler))

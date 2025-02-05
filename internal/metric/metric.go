@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"os"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -21,7 +22,7 @@ type NetAddress struct {
 }
 
 func (a NetAddress) String() string {
-	return a.Host + ":" + strconv.Itoa(a.Port)
+	return "http://" + a.Host + ":" + strconv.Itoa(a.Port)
 }
 
 func (a *NetAddress) Set(s string) error {
@@ -56,9 +57,23 @@ func NewMetricCollector() *MetricCollector {
 		Host: "localhost",
 		Port: 8080,
 	}
-	flag.Var(&addr, "a", "Net address host:port")
-	poll := flag.Int("p", 2, "pol interval")
-	report := flag.Int("r", 10, "report interval")
+	addrEnv := os.Getenv("ADDRESS")
+	if addr.Set(addrEnv) != nil {
+		flag.Var(&addr, "a", "Net address host:port")
+	}
+	pollEnv := os.Getenv("POLL_INTERVAL")
+	var poll *int
+	var err error
+	*poll, err = strconv.Atoi(pollEnv)
+	if nil != err {
+		poll = flag.Int("p", 2, "pol interval")
+	}
+	reportEnv := os.Getenv("REPORT_INTERVAL")
+	var report *int
+	*report, err = strconv.Atoi(reportEnv)
+	if nil != err {
+		report = flag.Int("r", 10, "report interval")
+	}
 	flag.Parse()
 
 	return &MetricCollector{
@@ -102,7 +117,7 @@ func (mc *MetricCollector) SendMetrics() {
 
 func SendMetric(Addr string, metricType string, metricName string, metricValue string) error {
 	client := &http.Client{}
-	url := "http://" + Addr + "/update/" + metricType + "/" + metricName + "/" + metricValue
+	url := Addr + "/update/" + metricType + "/" + metricName + "/" + metricValue
 	var body []byte
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
