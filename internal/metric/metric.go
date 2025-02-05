@@ -22,7 +22,7 @@ type NetAddress struct {
 }
 
 func (a NetAddress) String() string {
-	return "http://" + a.Host + ":" + strconv.Itoa(a.Port)
+	return a.Host + ":" + strconv.Itoa(a.Port)
 }
 
 func (a *NetAddress) Set(s string) error {
@@ -54,7 +54,7 @@ type MetricCollector struct {
 
 func NewMetricCollector() *MetricCollector {
 	addr := NetAddress{
-		Host: "localhost",
+		Host: "http://localhost",
 		Port: 8080,
 	}
 	addrEnv := os.Getenv("ADDRESS")
