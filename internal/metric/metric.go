@@ -22,7 +22,7 @@ type NetAddress struct {
 }
 
 func (a NetAddress) String() string {
-	return a.Host + ":" + strconv.Itoa(a.Port)
+	return "http://" + a.Host + ":" + strconv.Itoa(a.Port)
 }
 
 func (a *NetAddress) Set(s string) error {
@@ -53,14 +53,14 @@ type MetricCollector struct {
 }
 
 func NewMetricCollector() *MetricCollector {
+
 	addr := NetAddress{
-		Host: "http://localhost",
+		Host: "localhost",
 		Port: 8080,
 	}
 	addrEnv := os.Getenv("ADDRESS")
-	if addr.Set(addrEnv) != nil {
-		flag.Var(&addr, "a", "Net address host:port")
-	}
+	address := flag.String("a", "localhost:8080", "Net address host:port")
+
 	pollEnv := os.Getenv("POLL_INTERVAL")
 	poll, err := strconv.Atoi(pollEnv)
 	if nil != err {
@@ -71,7 +71,11 @@ func NewMetricCollector() *MetricCollector {
 	if nil != err {
 		flag.IntVar(&report, "r", 10, "report interval")
 	}
+
 	flag.Parse()
+	if addr.Set(addrEnv) != nil {
+		addr.Set(*address)
+	}
 	return &MetricCollector{
 		Addr:           addr,
 		pollInterval:   time.Duration(poll),
