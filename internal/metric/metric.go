@@ -20,14 +20,14 @@ type Metrics struct {
 type MetricCollector struct {
 	Cfg        *config.ServerConfig
 	Metric     Metrics
-	HttpClient *client.HttpClient
+	HttpClient *client.HTTPClient
 }
 
 func NewMetricCollector() *MetricCollector {
 	cfg := config.NewAgtConfig()
 	return &MetricCollector{
 		Cfg:        cfg,
-		HttpClient: client.NewHttpClient(cfg.Addr.StringHttp()),
+		HttpClient: client.NewHTTPClient(cfg.Addr.StringHTTP()),
 		Metric:     Metrics{},
 	}
 }
@@ -65,8 +65,8 @@ func (mc *MetricCollector) SendMetrics() {
 
 func (mc *MetricCollector) SendMetric(metricType string, metricName string, metricValue string) error {
 
-	ApiName := "/update/" + metricType + "/" + metricName + "/" + metricValue
-	return mc.HttpClient.CallApi(ApiName)
+	APIName := "/update/" + metricType + "/" + metricName + "/" + metricValue
+	return mc.HttpClient.CallAPI(APIName)
 }
 
 func (mc *MetricCollector) Run() {

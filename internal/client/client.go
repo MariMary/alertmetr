@@ -6,21 +6,21 @@ import (
 	"net/http"
 )
 
-type HttpClient struct {
+type HTTPClient struct {
 	Client  *http.Client
 	Address string
 }
 
-func NewHttpClient(Address string) *HttpClient {
-	return &HttpClient{
+func NewHTTPClient(Address string) *HTTPClient {
+	return &HTTPClient{
 		Address: Address,
 		Client:  &http.Client{},
 	}
 }
 
-func (hc *HttpClient) CallApi(ApiName string) error {
+func (hc *HTTPClient) CallAPI(APIName string) error {
 
-	url := hc.Address + ApiName
+	url := hc.Address + APIName
 	var body []byte
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {

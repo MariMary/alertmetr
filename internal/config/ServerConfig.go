@@ -74,7 +74,7 @@ func (a *NetAddress) String() string {
 	return a.Host + ":" + strconv.Itoa(a.Port)
 }
 
-func (a NetAddress) StringHttp() string {
+func (a NetAddress) StringHTTP() string {
 	return "http://" + a.Host + ":" + strconv.Itoa(a.Port)
 }
 
