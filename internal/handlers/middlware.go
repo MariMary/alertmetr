@@ -42,13 +42,11 @@ func ZapLogging(h http.Handler) http.Handler {
 			ResponseWriter: w,
 			responseData:   responseData,
 		}
-		uri := r.RequestURI
-		method := r.Method
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 		Sugar.Infoln(
-			"uri", uri,
-			"method", method,
+			"uri", r.RequestURI,
+			"method", r.Method,
 			"duration", duration,
 			"status", responseData.status,
 			"size", responseData.size,
