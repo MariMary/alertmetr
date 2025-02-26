@@ -1,43 +1,15 @@
 package metric
 
 import (
-	"bytes"
-	"errors"
-	"flag"
 	"fmt"
-	"io"
 	"math/rand"
-	"net/http"
-	"os"
 	"reflect"
 	"runtime"
-	"strconv"
-	"strings"
 	"time"
+
+	"github.com/MariMary/alertmetr/internal/client"
+	"github.com/MariMary/alertmetr/internal/config"
 )
-
-type NetAddress struct {
-	Host string
-	Port int
-}
-
-func (a NetAddress) String() string {
-	return "http://" + a.Host + ":" + strconv.Itoa(a.Port)
-}
-
-func (a *NetAddress) Set(s string) error {
-	hp := strings.Split(s, ":")
-	if len(hp) != 2 {
-		return errors.New("need address in a form host:port")
-	}
-	port, err := strconv.Atoi(hp[1])
-	if err != nil {
-		return err
-	}
-	a.Host = hp[0]
-	a.Port = port
-	return nil
-}
 
 type Metrics struct {
 	MemStats    runtime.MemStats
@@ -46,41 +18,17 @@ type Metrics struct {
 }
 
 type MetricCollector struct {
-	Metric         Metrics
-	Addr           NetAddress
-	reportInterval time.Duration
-	pollInterval   time.Duration
+	Cfg        *config.ServerConfig
+	Metric     Metrics
+	HTTPClient *client.HTTPClient
 }
 
 func NewMetricCollector() *MetricCollector {
-
-	addr := NetAddress{
-		Host: "localhost",
-		Port: 8080,
-	}
-	addrEnv := os.Getenv("ADDRESS")
-	address := flag.String("a", "localhost:8080", "Net address host:port")
-
-	pollEnv := os.Getenv("POLL_INTERVAL")
-	poll, err := strconv.Atoi(pollEnv)
-	if nil != err {
-		flag.IntVar(&poll, "p", 2, "poll interval")
-	}
-	reportEnv := os.Getenv("REPORT_INTERVAL")
-	report, err := strconv.Atoi(reportEnv)
-	if nil != err {
-		flag.IntVar(&report, "r", 10, "report interval")
-	}
-
-	flag.Parse()
-	if addr.Set(addrEnv) != nil {
-		addr.Set(*address)
-	}
+	cfg := config.NewAgtConfig()
 	return &MetricCollector{
-		Addr:           addr,
-		pollInterval:   time.Duration(poll),
-		reportInterval: time.Duration(report),
-		Metric:         Metrics{},
+		Cfg:        cfg,
+		HTTPClient: client.NewHTTPClient(cfg.Addr.StringHTTP()),
+		Metric:     Metrics{},
 	}
 }
 
@@ -111,34 +59,19 @@ func (mc *MetricCollector) SendMetrics() {
 			MetricValue = fmt.Sprintf("%v", value)
 			MetricType = "counter"
 		}
-		SendMetric(mc.Addr.String(), MetricType, MetricName, MetricValue)
+		mc.SendMetric(MetricType, MetricName, MetricValue)
 	}
 }
 
-func SendMetric(Addr string, metricType string, metricName string, metricValue string) error {
-	client := &http.Client{}
-	url := Addr + "/update/" + metricType + "/" + metricName + "/" + metricValue
-	var body []byte
-	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "text/plain")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(io.Discard, response.Body)
-	response.Body.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+func (mc *MetricCollector) SendMetric(metricType string, metricName string, metricValue string) error {
+
+	APIName := "/update/" + metricType + "/" + metricName + "/" + metricValue
+	return mc.HTTPClient.CallAPI(APIName)
 }
 
 func (mc *MetricCollector) Run() {
-	pollTick := time.NewTicker(mc.pollInterval)
-	reportTick := time.NewTicker(mc.reportInterval)
+	pollTick := time.NewTicker(mc.Cfg.PollInterval)
+	reportTick := time.NewTicker(mc.Cfg.ReportInterval)
 	for {
 		select {
 		case <-pollTick.C:
