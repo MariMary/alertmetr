@@ -43,11 +43,6 @@ func NewAgtConfig() *ServerConfig {
 
 	addrEnv := os.Getenv("ADDRESS")
 	address := flag.String("a", "localhost:8080", "Net address host:port")
-
-	flag.Parse()
-	if addr.Set(addrEnv) != nil {
-		addr.Set(*address)
-	}
 	pollEnv := os.Getenv("POLL_INTERVAL")
 	poll, err := strconv.Atoi(pollEnv)
 	if nil != err {
@@ -57,6 +52,10 @@ func NewAgtConfig() *ServerConfig {
 	report, err := strconv.Atoi(reportEnv)
 	if nil != err {
 		flag.IntVar(&report, "r", 10, "report interval")
+	}
+	flag.Parse()
+	if addr.Set(addrEnv) != nil {
+		addr.Set(*address)
 	}
 	return &ServerConfig{
 		Addr:           addr,
