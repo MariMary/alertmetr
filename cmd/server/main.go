@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/MariMary/alertmetr/internal/config"
@@ -27,9 +26,10 @@ func main() {
 	r := chi.NewMux()
 	r.Use(handlers.ZapLogging)
 	r.Handle("/update/*", http.HandlerFunc(srvHandler.UpdateHandler))
+	r.Handle("/update/", http.HandlerFunc(srvHandler.UpdateHandlerJSON))
 	r.Handle("/value/*", http.HandlerFunc(srvHandler.GetSingleValueHandler))
+	r.Handle("/value/", http.HandlerFunc(srvHandler.GetSingleValueHandlerJSON))
 	r.Handle("/", http.HandlerFunc(srvHandler.GetAllValuesHandler))
-	log.Println(cfg.Addr.String())
 
 	err = http.ListenAndServe(cfg.Addr.String(), r)
 	if err != nil {
