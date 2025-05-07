@@ -24,7 +24,7 @@ func main() {
 	handlers.Sugar = *logger.Sugar()
 
 	r := chi.NewMux()
-	r.Use(handlers.ZapLogging)
+	r.Use(handlers.GzipMiddleware, handlers.ZapLogging)
 	r.Handle("/update/*", http.HandlerFunc(srvHandler.UpdateHandler))
 	r.Handle("/update/", http.HandlerFunc(srvHandler.UpdateHandlerJSON))
 	r.Handle("/value/*", http.HandlerFunc(srvHandler.GetSingleValueHandler))

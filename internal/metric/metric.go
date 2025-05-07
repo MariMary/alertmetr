@@ -1,6 +1,8 @@
 package metric
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"math/rand"
 	"reflect"
@@ -89,11 +91,15 @@ func (mc *MetricCollector) SendMetricJSON(metricType string, metricName string, 
 		Value: Value,
 		Delta: Delta,
 	}
+	buf := new(bytes.Buffer)
+	gz := gzip.NewWriter(buf)
 	body, err := json.Marshal(metric)
 	if err != nil {
 		return err
 	}
-	return mc.HTTPClient.CallAPI("/update/", body, "application/json")
+	gz.Write(body)
+	gz.Close()
+	return mc.HTTPClient.CallAPIBuf("/update/", buf, "application/json")
 }
 
 func (mc *MetricCollector) Run() {
