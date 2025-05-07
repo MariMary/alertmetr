@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -32,7 +33,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 
 func ZapLogging(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
-		//start := time.Now()
+		start := time.Now()
 		responseData := &responseData{
 			status: 0,
 			size:   0,
@@ -42,14 +43,14 @@ func ZapLogging(h http.Handler) http.Handler {
 			responseData:   responseData,
 		}
 		h.ServeHTTP(&lw, r)
-		/*duration := time.Since(start)
-		/*Sugar.Infoln(
+		duration := time.Since(start)
+		Sugar.Infoln(
 			"uri", r.RequestURI,
 			"method", r.Method,
 			"duration", duration,
 			"status", responseData.status,
 			"size", responseData.size,
-		)*/
+		)
 
 	}
 	return http.HandlerFunc(logFn)
