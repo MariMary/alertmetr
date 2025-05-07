@@ -120,15 +120,13 @@ func ZapLogging(h http.Handler) http.Handler {
 
 func GzipMiddleware(h http.Handler) http.Handler {
 	gzipFunc := func(w http.ResponseWriter, r *http.Request) {
-		// по умолчанию устанавливаем оригинальный http.ResponseWriter как тот,
-		// который будем передавать следующей функции
 		ow := w
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip {
 			cw := newCompressWriter(w)
 			ow = cw
-			cw.Header().Set("Content-Encoding", "gzip")
+			ow.Header().Set("Content-Encoding", "gzip")
 			defer cw.Close()
 		}
 
