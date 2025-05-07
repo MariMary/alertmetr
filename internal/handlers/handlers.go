@@ -85,6 +85,7 @@ func (ms *MetricHandlers) GetAllValuesHandler(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
 	}
 	metrics := ms.Storage.GetAllMetrics()
+	w.Header().Set("Content-Type", "text/html")
 	tmpl := template.Must(template.New("data").Parse(`<!doctype html>
 	<html>
 	<head>
