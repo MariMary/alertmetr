@@ -15,12 +15,32 @@ type ServerConfig struct {
 	Port           int
 	PollInterval   time.Duration
 	ReportInterval time.Duration
+	StoreInterval  time.Duration
+	StoragePath    string
+	Restore        bool
 }
 
 func NewSrvConfig() *ServerConfig {
 	addr := NetAddress{
 		Host: "localhost",
 		Port: 8080,
+	}
+
+	storeEnv := os.Getenv("STORE_INTERVAL")
+	storeInt, err := strconv.Atoi(storeEnv)
+	if nil != err {
+		flag.IntVar(&storeInt, "i", 300, "store interval")
+	}
+	storagePath := os.Getenv("FILE_STORAGE_PATH")
+	stP := flag.String("f", "storage.txt", "storage file path")
+
+	restoreEnv := os.Getenv("RESTORE")
+	restore := true
+
+	if len(restoreEnv) > 0 {
+		restore, _ = strconv.ParseBool(restoreEnv)
+	} else {
+		flag.BoolVar(&restore, "r", true, "restore flag")
 	}
 
 	addrEnv := os.Getenv("ADDRESS")
@@ -30,8 +50,14 @@ func NewSrvConfig() *ServerConfig {
 	if addr.Set(addrEnv) != nil {
 		addr.Set(*address)
 	}
+	if len(storagePath) == 0 {
+		storagePath = *stP
+	}
 	return &ServerConfig{
-		Addr: addr,
+		Addr:          addr,
+		StoreInterval: time.Duration(storeInt),
+		StoragePath:   storagePath,
+		Restore:       restore,
 	}
 }
 

@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/MariMary/alertmetr/internal/config"
 	"github.com/MariMary/alertmetr/internal/handlers"
@@ -11,11 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
-var srvHandler = handlers.MetricHandlers{
-	Storage: storage.NewMemStorage(),
-}
-
 func main() {
+	log.Println("server started")
 	cfg := config.NewSrvConfig()
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -24,16 +24,28 @@ func main() {
 	defer logger.Sync()
 	handlers.Sugar = *logger.Sugar()
 
-	r := chi.NewMux()
-	r.Use(handlers.ZapLogging)
-	r.Handle("/update/*", http.HandlerFunc(srvHandler.UpdateHandler))
-	r.Handle("/value/*", http.HandlerFunc(srvHandler.GetSingleValueHandler))
-	r.Handle("/", http.HandlerFunc(srvHandler.GetAllValuesHandler))
-	log.Println(cfg.Addr.String())
-
-	err = http.ListenAndServe(cfg.Addr.String(), r)
-	if err != nil {
-		panic(err)
+	var srvHandler = handlers.MetricHandlers{
+		Storage: storage.NewMemStorage(cfg.StoreInterval, cfg.StoragePath, cfg.Restore),
 	}
+
+	r := chi.NewMux()
+	r.Use(handlers.GzipMiddleware, handlers.ZapLogging)
+	r.Handle("/update/*", http.HandlerFunc(srvHandler.UpdateHandler))
+	r.Handle("/update/", http.HandlerFunc(srvHandler.UpdateHandlerJSON))
+	r.Handle("/value/*", http.HandlerFunc(srvHandler.GetSingleValueHandler))
+	r.Handle("/value/", http.HandlerFunc(srvHandler.GetSingleValueHandlerJSON))
+	r.Handle("/", http.HandlerFunc(srvHandler.GetAllValuesHandler))
+	go func() {
+		err = http.ListenAndServe(cfg.Addr.String(), r)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	stopSignal := make(chan os.Signal, 1)
+	signal.Notify(stopSignal, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	<-stopSignal
+
+	srvHandler.Storage.SaveMetrics()
 
 }
