@@ -1,15 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
 	"html/template"
-	"io"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/MariMary/alertmetr/internal/metric"
 	"github.com/MariMary/alertmetr/internal/storage"
 )
 
@@ -17,48 +14,13 @@ type MetricHandlers struct {
 	Storage storage.Storage
 }
 
-func (ms *MetricHandlers) GetSingleValueHandlerJSON(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid method", http.StatusBadRequest)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	defer r.Body.Close()
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var metric metric.Metric
-	if err := json.Unmarshal(body, &metric); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	rMetric, err := ms.Storage.GetMetricJSON(&metric)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	resp, err := json.Marshal(rMetric)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
 func (ms *MetricHandlers) GetSingleValueHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Invalid method", http.StatusNotFound)
+		http.Error(w, "Invalid method", http.StatusBadRequest)
 	}
 	pth := r.URL.Path
 	params := strings.Split(pth, "/")
-	if len(params) < 4 {
+	if len(params) < 3 {
 		http.Error(w, "No such metric", http.StatusNotFound)
 		return
 	}
@@ -81,11 +43,9 @@ func (ms *MetricHandlers) GetSingleValueHandler(w http.ResponseWriter, r *http.R
 }
 
 func (ms *MetricHandlers) GetAllValuesHandler(w http.ResponseWriter, r *http.Request) {
-
 	if r.Method != http.MethodGet {
 		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
 	}
-	w.Header().Set("Content-Type", "text/html")
 	metrics := ms.Storage.GetAllMetrics()
 	tmpl := template.Must(template.New("data").Parse(`<!doctype html>
 	<html>
@@ -112,6 +72,7 @@ func (ms *MetricHandlers) GetAllValuesHandler(w http.ResponseWriter, r *http.Req
 }
 
 func (ms *MetricHandlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
 	}
@@ -151,51 +112,5 @@ func (ms *MetricHandlers) UpdateHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-
-}
-
-func (ms *MetricHandlers) UpdateHandlerJSON(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	defer r.Body.Close()
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var metric metric.Metric
-	if err := json.Unmarshal(body, &metric); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	switch metric.MType {
-	case "gauge":
-		ms.Storage.RewriteGauge(metric.ID, *metric.Value)
-	case "counter":
-		ms.Storage.AppendCounter(metric.ID, *metric.Delta)
-	default:
-		http.Error(w, "invalid metric type", http.StatusInternalServerError)
-	}
-
-	rMetric, err := ms.Storage.GetMetricJSON(&metric)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	resp, err := json.Marshal(rMetric)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 }

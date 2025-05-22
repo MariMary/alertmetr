@@ -1,7 +1,0 @@
-[
-   {
-      "id": "fmetric",
-      "type": "gauge",
-      "value": 4.27
-   }
-]

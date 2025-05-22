@@ -53,7 +53,7 @@ func TestHandlers_UpdateHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			srvHandler := MetricHandlers{
-				Storage: storage.NewMemStorage(0, "metrics.txt", false),
+				Storage: storage.NewMemStorage(),
 			}
 			r := httptest.NewRequest(http.MethodPost, test.want.path, nil)
 			w := httptest.NewRecorder()
@@ -88,7 +88,7 @@ func TestHandlers_GetSingleValueHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			srvHandler := MetricHandlers{
-				Storage: storage.NewMemStorage(0, "metrics.txt", false),
+				Storage: storage.NewMemStorage(),
 			}
 			r := httptest.NewRequest(http.MethodGet, test.want.path, nil)
 			w := httptest.NewRecorder()

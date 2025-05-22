@@ -18,37 +18,15 @@ func NewHTTPClient(Address string) *HTTPClient {
 	}
 }
 
-func (hc *HTTPClient) CallAPI(APIName string, Body []byte, ContentType string) error {
+func (hc *HTTPClient) CallAPI(APIName string) error {
 
 	url := hc.Address + APIName
-	//var body []byte
-	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(Body))
+	var body []byte
+	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", ContentType)
-	response, err := hc.Client.Do(request)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(io.Discard, response.Body)
-	response.Body.Close()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (hc *HTTPClient) CallAPIBuf(APIName string, Buffer *bytes.Buffer, ContentType string) error {
-
-	url := hc.Address + APIName
-	//var body []byte
-	request, err := http.NewRequest(http.MethodPost, url, Buffer)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", ContentType)
-	request.Header.Set("Content-Encoding", "gzip")
+	request.Header.Set("Content-Type", "text/plain")
 	response, err := hc.Client.Do(request)
 	if err != nil {
 		return err
