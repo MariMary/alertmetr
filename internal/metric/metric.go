@@ -2,41 +2,22 @@ package metric
 
 import (
 	"bytes"
-	"errors"
-	"flag"
-	"fmt"
-	"io"
+	"compress/gzip"
+	"encoding/json"
 	"math/rand"
-	"net/http"
-	"os"
 	"reflect"
 	"runtime"
-	"strconv"
-	"strings"
 	"time"
+
+	"github.com/MariMary/alertmetr/internal/client"
+	"github.com/MariMary/alertmetr/internal/config"
 )
 
-type NetAddress struct {
-	Host string
-	Port int
-}
-
-func (a NetAddress) String() string {
-	return "http://" + a.Host + ":" + strconv.Itoa(a.Port)
-}
-
-func (a *NetAddress) Set(s string) error {
-	hp := strings.Split(s, ":")
-	if len(hp) != 2 {
-		return errors.New("need address in a form host:port")
-	}
-	port, err := strconv.Atoi(hp[1])
-	if err != nil {
-		return err
-	}
-	a.Host = hp[0]
-	a.Port = port
-	return nil
+type Metric struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
 type Metrics struct {
@@ -46,41 +27,17 @@ type Metrics struct {
 }
 
 type MetricCollector struct {
-	Metric         Metrics
-	Addr           NetAddress
-	reportInterval time.Duration
-	pollInterval   time.Duration
+	Cfg        *config.ServerConfig
+	Metric     Metrics
+	HTTPClient *client.HTTPClient
 }
 
 func NewMetricCollector() *MetricCollector {
-	addr := NetAddress{
-		Host: "localhost",
-		Port: 8080,
-	}
-	addrEnv := os.Getenv("ADDRESS")
-	if addr.Set(addrEnv) != nil {
-		flag.Var(&addr, "a", "Net address host:port")
-	}
-	pollEnv := os.Getenv("POLL_INTERVAL")
-	var poll *int
-	var err error
-	*poll, err = strconv.Atoi(pollEnv)
-	if nil != err {
-		poll = flag.Int("p", 2, "pol interval")
-	}
-	reportEnv := os.Getenv("REPORT_INTERVAL")
-	var report *int
-	*report, err = strconv.Atoi(reportEnv)
-	if nil != err {
-		report = flag.Int("r", 10, "report interval")
-	}
-	flag.Parse()
-
+	cfg := config.NewAgtConfig()
 	return &MetricCollector{
-		Addr:           addr,
-		pollInterval:   time.Duration(*poll),
-		reportInterval: time.Duration(*report),
-		Metric:         Metrics{},
+		Cfg:        cfg,
+		HTTPClient: client.NewHTTPClient(cfg.Addr.StringHTTP()),
+		Metric:     Metrics{},
 	}
 }
 
@@ -91,54 +48,65 @@ func (mc *MetricCollector) ReadMetrics() {
 }
 
 func (mc *MetricCollector) SendMetrics() {
+	mc.SendMetricJSON("counter", "PollCount", nil, &mc.Metric.PollCount)
+	mc.SendMetricJSON("gauge", "RandomValue", &mc.Metric.RandomValue, nil)
+
 	values := reflect.ValueOf(mc.Metric.MemStats)
 	typs := reflect.TypeOf(mc.Metric.MemStats)
 	for i := 0; i < values.NumField(); i++ {
+
 		MetricValType := typs.Field(i).Type.Name()
 		MetricName := typs.Field(i).Name
-		MetricValue := ""
-		MetricType := ""
 		if MetricValType == "float64" {
 			value := reflect.ValueOf(values.Field(i).Interface()).Float()
-			MetricValue = fmt.Sprintf("%v", value)
-			MetricType = "gauge"
+			mc.SendMetricJSON("gauge", MetricName, &value, nil)
 		} else if MetricValType == "uint64" {
 			value := reflect.ValueOf(values.Field(i).Interface()).Uint()
-			MetricValue = fmt.Sprintf("%v", value)
-			MetricType = "counter"
+			v64 := float64(value)
+			mc.SendMetricJSON("gauge", MetricName, &v64, nil)
 		} else if MetricValType == "int64" {
 			value := reflect.ValueOf(values.Field(i).Interface()).Int()
-			MetricValue = fmt.Sprintf("%v", value)
-			MetricType = "counter"
+			v64 := float64(value)
+			mc.SendMetricJSON("gauge", MetricName, &v64, nil)
+		} else if MetricValType == "uint32" {
+			value := reflect.ValueOf(values.Field(i).Interface()).Uint()
+			v64 := float64(value)
+			mc.SendMetricJSON("gauge", MetricName, &v64, nil)
 		}
-		SendMetric(mc.Addr.String(), MetricType, MetricName, MetricValue)
 	}
 }
 
-func SendMetric(Addr string, metricType string, metricName string, metricValue string) error {
-	client := &http.Client{}
-	url := Addr + "/update/" + metricType + "/" + metricName + "/" + metricValue
-	var body []byte
-	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+func (mc *MetricCollector) SendMetric(metricType string, metricName string, metricValue string) error {
+
+	APIName := "/update/" + metricType + "/" + metricName + "/" + metricValue
+	return mc.HTTPClient.CallAPI(APIName, nil, "text/plain")
+	//return mc.HTTPClient.CallAPI(APIName)
+}
+
+func (mc *MetricCollector) SendMetricJSON(metricType string, metricName string, Value *float64, Delta *int64) error {
+
+	metric := Metric{
+		ID:    metricName,
+		MType: metricType,
+		Value: Value,
+		Delta: Delta,
+	}
+	buf := new(bytes.Buffer)
+	gz := gzip.NewWriter(buf)
+	body, err := json.Marshal(metric)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "text/plain")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(io.Discard, response.Body)
-	response.Body.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	gz.Write(body)
+	gz.Close()
+	return mc.HTTPClient.CallAPIBuf("/update/", buf, "application/json")
 }
 
 func (mc *MetricCollector) Run() {
-	pollTick := time.NewTicker(mc.pollInterval)
-	reportTick := time.NewTicker(mc.reportInterval)
+	mc.ReadMetrics()
+	mc.SendMetrics()
+	pollTick := time.NewTicker(mc.Cfg.PollInterval)
+	reportTick := time.NewTicker(mc.Cfg.ReportInterval)
 	for {
 		select {
 		case <-pollTick.C:

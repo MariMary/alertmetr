@@ -1,64 +1,51 @@
 package main
 
 import (
-	"errors"
+	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
+	"os/signal"
+	"syscall"
 
-	"flag"
-
+	"github.com/MariMary/alertmetr/internal/config"
 	"github.com/MariMary/alertmetr/internal/handlers"
 	"github.com/MariMary/alertmetr/internal/storage"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
-var srvHandler = handlers.MetricHandlers{
-	Storage: storage.NewMemStorage(),
-}
-
-type NetAddress struct {
-	Host string
-	Port int
-}
-
-func (a NetAddress) String() string {
-	return a.Host + ":" + strconv.Itoa(a.Port)
-}
-
-func (a *NetAddress) Set(s string) error {
-	hp := strings.Split(s, ":")
-	if len(hp) != 2 {
-		return errors.New("need address in a form host:port")
-	}
-	port, err := strconv.Atoi(hp[1])
-	if err != nil {
-		return err
-	}
-	a.Host = hp[0]
-	a.Port = port
-	return nil
-}
-
 func main() {
-	addr := NetAddress{
-		Host: "localhost",
-		Port: 8080,
-	}
-	addrEnv := os.Getenv("ADDRESS")
-	if addr.Set(addrEnv) != nil {
-		flag.Var(&addr, "a", "Net address host:port")
-		flag.Parse()
-	}
-	r := chi.NewMux()
-	r.Handle("/update/*", http.HandlerFunc(srvHandler.UpdateHandler))
-	r.Handle("/value/*", http.HandlerFunc(srvHandler.GetSingleValueHandler))
-	r.Handle("/", http.HandlerFunc(srvHandler.GetAllValuesHandler))
-
-	err := http.ListenAndServe(addr.String(), r)
+	log.Println("server started")
+	cfg := config.NewSrvConfig()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic(err)
 	}
+	defer logger.Sync()
+	handlers.Sugar = *logger.Sugar()
+
+	var srvHandler = handlers.MetricHandlers{
+		Storage: storage.NewMemStorage(cfg.StoreInterval, cfg.StoragePath, cfg.Restore),
+	}
+
+	r := chi.NewMux()
+	r.Use(handlers.GzipMiddleware, handlers.ZapLogging)
+	r.Handle("/update/*", http.HandlerFunc(srvHandler.UpdateHandler))
+	r.Handle("/update/", http.HandlerFunc(srvHandler.UpdateHandlerJSON))
+	r.Handle("/value/*", http.HandlerFunc(srvHandler.GetSingleValueHandler))
+	r.Handle("/value/", http.HandlerFunc(srvHandler.GetSingleValueHandlerJSON))
+	r.Handle("/", http.HandlerFunc(srvHandler.GetAllValuesHandler))
+	go func() {
+		err = http.ListenAndServe(cfg.Addr.String(), r)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	stopSignal := make(chan os.Signal, 1)
+	signal.Notify(stopSignal, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	<-stopSignal
+
+	srvHandler.Storage.SaveMetrics()
 
 }

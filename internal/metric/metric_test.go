@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMetric_SendMetric(t *testing.T) {
+func TestMetric_MetricCollector_SendMetric(t *testing.T) {
 	type want struct {
 		metricType  string
 		metricName  string
@@ -27,8 +27,8 @@ func TestMetric_SendMetric(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
-			err := SendMetric("localhost:8080", test.want.metricType, test.want.metricName, test.want.metricValue)
+			metricCollector := NewMetricCollector()
+			err := metricCollector.SendMetric(test.want.metricType, test.want.metricName, test.want.metricValue)
 			require.Error(t, err)
 
 		})

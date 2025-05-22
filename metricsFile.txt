@@ -1,0 +1,167 @@
+[
+   {
+      "id": "RandomValue",
+      "type": "gauge",
+      "value": 0.8769227399137196
+   },
+   {
+      "id": "PauseTotalNs",
+      "type": "gauge",
+      "value": 294967376
+   },
+   {
+      "id": "GCSys",
+      "type": "gauge",
+      "value": 2413208
+   },
+   {
+      "id": "MSpanSys",
+      "type": "gauge",
+      "value": 130560
+   },
+   {
+      "id": "TotalAlloc",
+      "type": "gauge",
+      "value": 15674461920
+   },
+   {
+      "id": "OtherSys",
+      "type": "gauge",
+      "value": 1082153
+   },
+   {
+      "id": "NextGC",
+      "type": "gauge",
+      "value": 4194304
+   },
+   {
+      "id": "Sys",
+      "type": "gauge",
+      "value": 12016656
+   },
+   {
+      "id": "GCCPUFraction",
+      "type": "gauge",
+      "value": 0.04660025390702049
+   },
+   {
+      "id": "HeapReleased",
+      "type": "gauge",
+      "value": 2965504
+   },
+   {
+      "id": "GetSet175",
+      "type": "gauge",
+      "value": 344918.72105072794
+   },
+   {
+      "id": "HeapObjects",
+      "type": "gauge",
+      "value": 1127
+   },
+   {
+      "id": "MSpanInuse",
+      "type": "gauge",
+      "value": 94560
+   },
+   {
+      "id": "StackSys",
+      "type": "gauge",
+      "value": 524288
+   },
+   {
+      "id": "Frees",
+      "type": "gauge",
+      "value": 1777251
+   },
+   {
+      "id": "Alloc",
+      "type": "gauge",
+      "value": 1207440
+   },
+   {
+      "id": "MCacheSys",
+      "type": "gauge",
+      "value": 15600
+   },
+   {
+      "id": "HeapSys",
+      "type": "gauge",
+      "value": 7847936
+   },
+   {
+      "id": "Mallocs",
+      "type": "gauge",
+      "value": 1778378
+   },
+   {
+      "id": "HeapAlloc",
+      "type": "gauge",
+      "value": 1207440
+   },
+   {
+      "id": "HeapInuse",
+      "type": "gauge",
+      "value": 1875968
+   },
+   {
+      "id": "Lookups",
+      "type": "gauge",
+      "value": 0
+   },
+   {
+      "id": "HeapIdle",
+      "type": "gauge",
+      "value": 5971968
+   },
+   {
+      "id": "LastGC",
+      "type": "gauge",
+      "value": 1746626901760892000
+   },
+   {
+      "id": "StackInuse",
+      "type": "gauge",
+      "value": 524288
+   },
+   {
+      "id": "BuckHashSys",
+      "type": "gauge",
+      "value": 2911
+   },
+   {
+      "id": "NumGC",
+      "type": "gauge",
+      "value": 5644
+   },
+   {
+      "id": "MCacheInuse",
+      "type": "gauge",
+      "value": 9600
+   },
+   {
+      "id": "NumForcedGC",
+      "type": "gauge",
+      "value": 0
+   },
+   {
+      "id": "GetSet131",
+      "type": "gauge",
+      "value": 485014.38523835345
+   },
+   {
+      "id": "GetSet252",
+      "type": "counter",
+      "delta": 3524077116
+   },
+   {
+      "id": "PollCount",
+      "type": "counter",
+      "delta": 225765
+   },
+   {
+      "id": "GetSet141",
+      "type": "counter",
+      "delta": 3596369253
+   }
+]
